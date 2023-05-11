@@ -679,7 +679,6 @@ namespace Ryujinx.Audio.Renderer.Server
                         _isDspRunningBehind = true;
                     }
                 }
-
             }
         }
 
