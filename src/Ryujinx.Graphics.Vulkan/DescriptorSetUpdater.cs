@@ -274,7 +274,7 @@ namespace Ryujinx.Graphics.Vulkan
 
                 Auto<DisposableBuffer> vkBuffer = buffer.Handle == BufferHandle.Null
                     ? null
-                    : _gd.BufferManager.GetBuffer(commandBuffer, buffer.Handle, buffer.Write, isSSBO: true);
+                    : _gd.BufferManager.GetBuffer(commandBuffer, buffer.Handle, buffer.Offset, buffer.Size, buffer.Write, isSSBO: true);
 
                 ref BufferRef currentBufferRef = ref _storageBufferRefs[index];
 
