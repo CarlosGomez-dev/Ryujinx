@@ -60,9 +60,9 @@
                         <TextBlock
                             FontSize="28"
                             FontWeight="Bold"
-                            Text="Ryujinx"
+                            Text="Ryujinx-C"
                             TextAlignment="Left" />
-                        <TextBlock Text="(REE-YOU-JINX)" TextAlignment="Left" />
+                        <TextBlock Text="(REE-YOU-JINX-SEE)" TextAlignment="Left" />
                     </flex:FlexPanel>
                 </Grid>
                 <TextBlock
