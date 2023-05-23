@@ -1,4 +1,7 @@
-﻿namespace Ryujinx.Graphics.Vulkan
+﻿using System.Numerics;
+using System;
+
+namespace Ryujinx.Graphics.Vulkan
 {
     readonly struct BitMap
     {
@@ -12,6 +15,51 @@
         public BitMap(int count)
         {
             _masks = new long[(count + IntMask) / IntSize];
+        }
+
+        public void SignalSet(Action<int, int> action)
+        {
+            // Iterate the set bits in the result, and signal them.
+
+            int offset = 0;
+            int masks = _masks.Length;
+
+            int setStart = int.MinValue;
+            int setCount = 0;
+
+            for (int i = 0; i < masks; i++)
+            {
+                long value = _masks[i];
+                while (value != 0)
+                {
+                    int bit = BitOperations.TrailingZeroCount((ulong)value);
+                    int index = offset + bit;
+
+                    if (index == setStart + setCount)
+                    {
+                        setCount++;
+                    }
+                    else
+                    {
+                        if (setCount > 0)
+                        {
+                            action(setStart, setCount);
+                        }
+
+                        setStart = index;
+                        setCount = 1;
+                    }
+
+                    value &= ~(1L << bit);
+                }
+
+                offset += IntSize;
+            }
+
+            if (setCount > 0)
+            {
+                action(setStart, setCount);
+            }
         }
 
         public bool AnySet()

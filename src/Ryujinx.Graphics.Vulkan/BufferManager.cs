@@ -192,6 +192,7 @@ namespace Ryujinx.Graphics.Vulkan
                     BufferAllocationType.HostMapped => DefaultBufferMemoryFlags,
                     BufferAllocationType.DeviceLocal => DeviceLocalBufferMemoryFlags,
                     BufferAllocationType.DeviceLocalMapped => DeviceLocalMappedBufferMemoryFlags,
+                    BufferAllocationType.DeviceLocalWithFlushBuffer => DeviceLocalBufferMemoryFlags,
                     _ => DefaultBufferMemoryFlags
                 };
 
@@ -277,21 +278,21 @@ namespace Ryujinx.Graphics.Vulkan
             return null;
         }
 
-        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, bool isWrite, bool isSSBO = false)
+        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, bool isWrite)
         {
             if (TryGetBuffer(handle, out var holder))
             {
-                return holder.GetBuffer(commandBuffer, isWrite, isSSBO);
+                return holder.GetBuffer(commandBuffer, isWrite);
             }
 
             return null;
         }
 
-        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, int offset, int size, bool isWrite)
+        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, int offset, int size, bool isWrite, bool isSSBO = false)
         {
             if (TryGetBuffer(handle, out var holder))
             {
-                return holder.GetBuffer(commandBuffer, offset, size, isWrite);
+                return holder.GetBuffer(commandBuffer, offset, size, isWrite, isSSBO);
             }
 
             return null;

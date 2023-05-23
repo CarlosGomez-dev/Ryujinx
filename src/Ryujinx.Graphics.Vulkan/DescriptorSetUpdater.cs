@@ -4,6 +4,7 @@ using Ryujinx.Graphics.GAL;
 using Ryujinx.Graphics.Shader;
 using Silk.NET.Vulkan;
 using System;
+using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -160,7 +161,7 @@ namespace Ryujinx.Graphics.Vulkan
 
         public void Initialize()
         {
-            Span<byte> dummyTextureData = stackalloc byte[4];
+            IMemoryOwner<byte> dummyTextureData = ByteMemoryPool.Shared.RentCleared(4);
             _dummyTexture.SetData(dummyTextureData);
         }
 
@@ -273,7 +274,7 @@ namespace Ryujinx.Graphics.Vulkan
 
                 Auto<DisposableBuffer> vkBuffer = buffer.Handle == BufferHandle.Null
                     ? null
-                    : _gd.BufferManager.GetBuffer(commandBuffer, buffer.Handle, buffer.Write, isSSBO: true);
+                    : _gd.BufferManager.GetBuffer(commandBuffer, buffer.Handle, buffer.Offset, buffer.Size, buffer.Write, isSSBO: true);
 
                 ref BufferRef currentBufferRef = ref _storageBufferRefs[index];
 
