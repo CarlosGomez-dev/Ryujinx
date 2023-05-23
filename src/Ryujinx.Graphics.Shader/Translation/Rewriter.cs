@@ -20,11 +20,10 @@ namespace Ryujinx.Graphics.Shader.Translation
             {
                 BasicBlock block = blocks[blkIndex];
 
-                for (LinkedListNode<INode> node = block.Operations.First; node != null;)
+                for (LinkedListNode<INode> node = block.Operations.First; node != null; node = node.Next)
                 {
                     if (node.Value is not Operation operation)
                     {
-                        node = node.Next;
                         continue;
                     }
 
@@ -48,8 +47,6 @@ namespace Ryujinx.Graphics.Shader.Translation
                         InsertVectorComponentSelect(node, config);
                     }
 
-                    LinkedListNode<INode> nextNode = node.Next;
-
                     if (operation is TextureOperation texOp)
                     {
                         node = InsertTexelFetchScale(hfm, node, config);
@@ -66,11 +63,7 @@ namespace Ryujinx.Graphics.Shader.Translation
                                 node = InsertSnormNormalization(node, config);
                             }
                         }
-
-                        nextNode = node.Next;
                     }
-
-                    node = nextNode;
                 }
             }
         }
