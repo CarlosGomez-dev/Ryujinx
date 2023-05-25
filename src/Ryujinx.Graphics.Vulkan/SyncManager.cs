@@ -1,5 +1,6 @@
 using Ryujinx.Common.Logging;
 using Silk.NET.Vulkan;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -29,11 +30,14 @@ namespace Ryujinx.Graphics.Vulkan
         private ulong FlushId;
         private long WaitTicks;
 
+        private List<Action> _syncActions;
+
         public SyncManager(VulkanRenderer gd, Device device)
         {
             _gd = gd;
             _device = device;
             _handles = new List<SyncHandle>();
+            _syncActions = new List<Action>();
         }
 
         public void RegisterFlush()
@@ -41,10 +45,27 @@ namespace Ryujinx.Graphics.Vulkan
             FlushId++;
         }
 
+        private void RunSyncActions()
+        {
+            foreach (Action action in _syncActions)
+            {
+                action();
+            }
+
+            _syncActions.Clear();
+        }
+
+        public void AddSyncAction(Action action)
+        {
+            _syncActions.Add(action);
+        }
+
         public void Create(ulong id, bool strict)
         {
             ulong flushId = FlushId;
             MultiFenceHolder waitable = new MultiFenceHolder();
+
+            RunSyncActions();
             if (strict || _gd.InterruptAction == null)
             {
                 _gd.FlushAllCommands();

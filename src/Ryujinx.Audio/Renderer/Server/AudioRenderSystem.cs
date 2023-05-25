@@ -31,7 +31,6 @@ namespace Ryujinx.Audio.Renderer.Server
         private AudioRendererRenderingDevice _renderingDevice;
         private AudioRendererExecutionMode _executionMode;
         private IWritableEvent _systemEvent;
-        private ManualResetEvent _terminationEvent;
         private MemoryPoolState _dspMemoryPoolState;
         private VoiceContext _voiceContext;
         private MixContext _mixContext;
@@ -83,7 +82,6 @@ namespace Ryujinx.Audio.Renderer.Server
         public AudioRenderSystem(AudioRendererManager manager, IWritableEvent systemEvent)
         {
             _manager = manager;
-            _terminationEvent = new ManualResetEvent(false);
             _dspMemoryPoolState = MemoryPoolState.Create(MemoryPoolState.LocationType.Dsp);
             _voiceContext = new VoiceContext();
             _mixContext = new MixContext();
@@ -387,11 +385,6 @@ namespace Ryujinx.Audio.Renderer.Server
                 _isActive = false;
             }
 
-            if (_executionMode == AudioRendererExecutionMode.Auto)
-            {
-                _terminationEvent.WaitOne();
-            }
-
             Logger.Info?.Print(LogClass.AudioRenderer, $"Stopped renderer id {_sessionId}");
         }
 
@@ -403,13 +396,13 @@ namespace Ryujinx.Audio.Renderer.Server
             }
         }
 
-        public ResultCode Update(Memory<byte> output, Memory<byte> performanceOutput, ReadOnlyMemory<byte> input)
+        public ResultCode Update(Memory<byte> output, Memory<byte> performanceOutput, ReadOnlySequence<byte> input)
         {
             lock (_lock)
             {
                 ulong updateStartTicks = GetSystemTicks();
 
-                output.Span.Fill(0);
+                output.Span.Clear();
 
                 StateUpdater stateUpdater = new StateUpdater(input, output, _processHandle, _behaviourContext);
 
@@ -436,14 +429,16 @@ namespace Ryujinx.Audio.Renderer.Server
                     return result;
                 }
 
-                result = stateUpdater.UpdateVoices(_voiceContext, _memoryPools);
+                PoolMapper poolMapper = new PoolMapper(_processHandle, _memoryPools, _behaviourContext.IsMemoryPoolForceMappingEnabled());
+
+                result = stateUpdater.UpdateVoices(_voiceContext, poolMapper);
 
                 if (result != ResultCode.Success)
                 {
                     return result;
                 }
 
-                result = stateUpdater.UpdateEffects(_effectContext, _isActive, _memoryPools);
+                result = stateUpdater.UpdateEffects(_effectContext, _isActive, poolMapper);
 
                 if (result != ResultCode.Success)
                 {
@@ -467,7 +462,7 @@ namespace Ryujinx.Audio.Renderer.Server
                     return result;
                 }
 
-                result = stateUpdater.UpdateSinks(_sinkContext, _memoryPools);
+                result = stateUpdater.UpdateSinks(_sinkContext, poolMapper);
 
                 if (result != ResultCode.Success)
                 {
@@ -668,8 +663,6 @@ namespace Ryujinx.Audio.Renderer.Server
             {
                 if (_isActive)
                 {
-                    _terminationEvent.Reset();
-
                     if (!_manager.Processor.HasRemainingCommands(_sessionId))
                     {
                         GenerateCommandList(out CommandList commands);
@@ -685,10 +678,6 @@ namespace Ryujinx.Audio.Renderer.Server
                     {
                         _isDspRunningBehind = true;
                     }
-                }
-                else
-                {
-                    _terminationEvent.Set();
                 }
             }
         }
@@ -857,7 +846,6 @@ namespace Ryujinx.Audio.Renderer.Server
                 }
 
                 _manager.Unregister(this);
-                _terminationEvent.Dispose();
                 _workBufferMemoryPin.Dispose();
 
                 if (MemoryManager is IRefCounted rc)

@@ -8,11 +8,11 @@ namespace Ryujinx.Graphics.Shader.StructuredIr
 {
     static class StructuredProgram
     {
-        public static StructuredProgramInfo MakeStructuredProgram(Function[] functions, ShaderConfig config)
+        public static StructuredProgramInfo MakeStructuredProgram(IReadOnlyList<Function> functions, ShaderConfig config)
         {
             StructuredProgramContext context = new StructuredProgramContext(config);
 
-            for (int funcIndex = 0; funcIndex < functions.Length; funcIndex++)
+            for (int funcIndex = 0; funcIndex < functions.Count; funcIndex++)
             {
                 Function function = functions[funcIndex];
 
@@ -262,10 +262,6 @@ namespace Ryujinx.Graphics.Shader.StructuredIr
                     {
                         context.Info.HelperFunctionsMask |= HelperFunctionsMask.AtomicMinMaxS32Shared;
                     }
-                    else if (operation.StorageKind == StorageKind.StorageBuffer)
-                    {
-                        context.Info.HelperFunctionsMask |= HelperFunctionsMask.AtomicMinMaxS32Storage;
-                    }
                     break;
                 case Instruction.MultiplyHighS32:
                     context.Info.HelperFunctionsMask |= HelperFunctionsMask.MultiplyHighS32;
@@ -288,10 +284,6 @@ namespace Ryujinx.Graphics.Shader.StructuredIr
                 case Instruction.StoreShared16:
                 case Instruction.StoreShared8:
                     context.Info.HelperFunctionsMask |= HelperFunctionsMask.StoreSharedSmallInt;
-                    break;
-                case Instruction.StoreStorage16:
-                case Instruction.StoreStorage8:
-                    context.Info.HelperFunctionsMask |= HelperFunctionsMask.StoreStorageSmallInt;
                     break;
                 case Instruction.SwizzleAdd:
                     context.Info.HelperFunctionsMask |= HelperFunctionsMask.SwizzleAdd;
