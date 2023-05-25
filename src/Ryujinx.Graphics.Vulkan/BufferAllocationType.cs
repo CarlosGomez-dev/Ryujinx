@@ -7,6 +7,7 @@
         HostMappedNoCache,
         HostMapped,
         DeviceLocal,
-        DeviceLocalMapped
+        DeviceLocalMapped,
+        DeviceLocalWithFlushBuffer
     }
 }

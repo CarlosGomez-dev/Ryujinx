@@ -115,8 +115,6 @@ namespace Ryujinx.Graphics.Vulkan
             holder = Create(gd, size, baseType: baseType, storageHint: storageHint);
             if (holder == null)
             {
-                Logger.Error?.Print(LogClass.Gpu, $"Failed to create buffer with size 0x{size:X} and type \"{baseType}\".");
-
                 return BufferHandle.Null;
             }
 
@@ -192,6 +190,7 @@ namespace Ryujinx.Graphics.Vulkan
                     BufferAllocationType.HostMapped => DefaultBufferMemoryFlags,
                     BufferAllocationType.DeviceLocal => DeviceLocalBufferMemoryFlags,
                     BufferAllocationType.DeviceLocalMapped => DeviceLocalMappedBufferMemoryFlags,
+                    BufferAllocationType.DeviceLocalWithFlushBuffer => DeviceLocalBufferMemoryFlags,
                     _ => DefaultBufferMemoryFlags
                 };
 
@@ -264,6 +263,8 @@ namespace Ryujinx.Graphics.Vulkan
                 return holder;
             }
 
+            Logger.Error?.Print(LogClass.Gpu, $"Failed to create buffer with size 0x{size:X} and type \"{baseType}\".");
+
             return null;
         }
 
@@ -277,21 +278,21 @@ namespace Ryujinx.Graphics.Vulkan
             return null;
         }
 
-        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, bool isWrite, bool isSSBO = false)
+        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, bool isWrite)
         {
             if (TryGetBuffer(handle, out var holder))
             {
-                return holder.GetBuffer(commandBuffer, isWrite, isSSBO);
+                return holder.GetBuffer(commandBuffer, isWrite);
             }
 
             return null;
         }
 
-        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, int offset, int size, bool isWrite)
+        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, BufferHandle handle, int offset, int size, bool isWrite, bool isSSBO = false)
         {
             if (TryGetBuffer(handle, out var holder))
             {
-                return holder.GetBuffer(commandBuffer, offset, size, isWrite);
+                return holder.GetBuffer(commandBuffer, offset, size, isWrite, isSSBO);
             }
 
             return null;

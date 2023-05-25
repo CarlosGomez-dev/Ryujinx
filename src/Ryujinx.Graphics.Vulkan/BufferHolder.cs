@@ -18,6 +18,8 @@ namespace Ryujinx.Graphics.Vulkan
         private const int WriteCountThreshold = 50;
         private const int FlushCountThreshold = 5;
 
+        private const int BufferFlushTrackingGranularity = 4096;
+
         public const int DeviceLocalSizeThreshold = 256 * 1024; // 256kb
 
         public const AccessFlags DefaultAccessFlags =
@@ -58,6 +60,12 @@ namespace Ryujinx.Graphics.Vulkan
         private int _flushTemp;
         private int _lastFlushWrite = -1;
 
+        private BufferHolder _flushBuffer;
+        private BitMap _flushRegions;
+        private bool _flushOnSyncPending;
+        private Action _copyPendingFlushDelegate;
+        private Action<int, int> _copyFlushRangeDelegate;
+
         private ReaderWriterLock _flushLock;
         private FenceHolder _flushFence;
         private int _flushWaiting;
@@ -84,6 +92,11 @@ namespace Ryujinx.Graphics.Vulkan
             _currentType = currentType;
             DesiredType = currentType;
 
+            if (_currentType == BufferAllocationType.DeviceLocalWithFlushBuffer)
+            {
+                PrepareFlushBuffer(_currentType, false);
+            }
+
             _flushLock = new ReaderWriterLock();
         }
 
@@ -105,6 +118,29 @@ namespace Ryujinx.Graphics.Vulkan
             DesiredType = currentType;
 
             _flushLock = new ReaderWriterLock();
+        }
+
+        private void PrepareFlushBuffer(BufferAllocationType type, bool copyData)
+        {
+            if (type == BufferAllocationType.DeviceLocalWithFlushBuffer)
+            {
+                int bits = Size / BufferFlushTrackingGranularity;
+
+                _flushBuffer = _gd.BufferManager.Create(_gd, Size);
+                _flushRegions = new BitMap(bits);
+                _copyPendingFlushDelegate = CopyPendingFlush;
+                _copyFlushRangeDelegate = CopyFlushRange;
+
+                if (copyData)
+                {
+                    CopyFlushRange(0, bits);
+                }
+            }
+            else if (_flushBuffer != null)
+            {
+                _flushBuffer.Dispose();
+                _flushBuffer = null;
+            }
         }
 
         public bool TryBackingSwap(ref CommandBufferScoped? cbs)
@@ -162,6 +198,8 @@ namespace Ryujinx.Graphics.Vulkan
                             Copy(_gd, cbsV, currentBuffer, _buffer, 0, 0, Size);
 
                             // Need to wait for the data to reach the new buffer before data can be flushed.
+
+                            PrepareFlushBuffer(resultType, true);
 
                             _flushFence = _gd.CommandBufferPool.GetFence(cbsV.CommandBufferIndex);
                             _flushFence.Get();
@@ -222,9 +260,9 @@ namespace Ryujinx.Graphics.Vulkan
                         // If it is small, then it's likely most of the buffer will be flushed so we want it on host memory, as access is cached.
 
                         bool hostMappingSensitive = _gd.Vendor == Vendor.Nvidia;
-                        bool deviceLocalMapped = Size > DeviceLocalSizeThreshold || (wasFlushed && _writeCount > _flushCount * 10 && hostMappingSensitive) || _currentType == BufferAllocationType.DeviceLocalMapped;
+                        bool deviceLocalMapped = Size > DeviceLocalSizeThreshold || (wasFlushed && _writeCount > _flushCount * 10 && hostMappingSensitive) || _currentType == BufferAllocationType.DeviceLocalWithFlushBuffer;
 
-                        DesiredType = deviceLocalMapped ? BufferAllocationType.DeviceLocalMapped : BufferAllocationType.HostMapped;
+                        DesiredType = deviceLocalMapped ? BufferAllocationType.DeviceLocalWithFlushBuffer : BufferAllocationType.HostMapped;
 
                         // It's harder for a buffer that is flushed to revert to another type of mapping.
                         if (_flushCount > 0)
@@ -405,6 +443,18 @@ namespace Ryujinx.Graphics.Vulkan
 
                 SignalWrite(0, Size);
             }
+
+            return _buffer;
+        }
+
+        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, int offset, int size, bool isWrite = false, bool isSSBO = false)
+        {
+            if (isWrite)
+            {
+                _writeCount++;
+
+                SignalWrite(offset, size);
+            }
             else if (isSSBO)
             {
                 // Always consider SSBO access for swapping to device local memory.
@@ -417,16 +467,31 @@ namespace Ryujinx.Graphics.Vulkan
             return _buffer;
         }
 
-        public Auto<DisposableBuffer> GetBuffer(CommandBuffer commandBuffer, int offset, int size, bool isWrite = false)
+        private void CopyPendingFlush()
         {
-            if (isWrite)
+            if (_flushOnSyncPending && _buffer.TryIncrementReferenceCount())
             {
-                _writeCount++;
+                _flushRegions.SignalSet(_copyFlushRangeDelegate);
 
-                SignalWrite(offset, size);
+                _buffer.DecrementReferenceCount();
+
+                _flushRegions.Clear();
+
+                _flushOnSyncPending = false;
             }
+        }
 
-            return _buffer;
+        private void CopyFlushRange(int bit, int count)
+        {
+            int offset = bit * BufferFlushTrackingGranularity;
+            int size = count * BufferFlushTrackingGranularity;
+
+            var cbs = _gd.PipelineInternal.CurrentCommandBuffer;
+
+            var src = GetBuffer(cbs.CommandBuffer, offset, size);
+            var dst = _flushBuffer.GetBuffer(cbs.CommandBuffer, offset, size, true);
+
+            Copy(_gd, cbs, src, dst, offset, offset, size);
         }
 
         public Auto<DisposableBuffer> GetMirrorable(CommandBufferScoped cbs, ref int offset, int size, out bool mirrored)
@@ -521,6 +586,18 @@ namespace Ryujinx.Graphics.Vulkan
             {
                 _cachedConvertedBuffers.ClearRange(offset, size);
             }
+
+            if (_flushBuffer != null)
+            {
+                _flushRegions.SetRange(offset / BufferFlushTrackingGranularity, (offset + size - 1) / BufferFlushTrackingGranularity);
+
+                if (!_flushOnSyncPending)
+                {
+                    _gd.SyncManager.AddSyncAction(_copyPendingFlushDelegate);
+
+                    _flushOnSyncPending = true;
+                }
+            }
         }
 
         public BufferHandle GetHandle()
@@ -609,6 +686,17 @@ namespace Ryujinx.Graphics.Vulkan
                 _flushLock.ReleaseReaderLock();
 
                 return PinnedSpan<byte>.UnsafeFromSpan(result, _buffer.DecrementReferenceCount);
+            }
+            else if (_flushBuffer != null)
+            {
+                result = _flushBuffer.GetDataStorage(offset, size);
+
+                // Need to be careful here, the buffer can't be unmapped while the data is being used.
+                _flushBuffer._buffer.IncrementReferenceCount();
+
+                _flushLock.ReleaseReaderLock();
+
+                return PinnedSpan<byte>.UnsafeFromSpan(result, _flushBuffer._buffer.DecrementReferenceCount);
             }
             else
             {
@@ -1067,10 +1155,13 @@ namespace Ryujinx.Graphics.Vulkan
         public void Dispose()
         {
             _swapQueued = false;
+            _flushOnSyncPending = false;
 
             _gd.PipelineInternal?.FlushCommandsIfWeightExceeding(_buffer, (ulong)Size);
 
             _buffer.Dispose();
+            _flushBuffer?.Dispose();
+
             _cachedConvertedBuffers.Dispose();
             if (_allocationImported)
             {
