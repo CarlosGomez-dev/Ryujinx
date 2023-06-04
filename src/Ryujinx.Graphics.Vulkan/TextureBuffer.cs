@@ -1,7 +1,7 @@
-﻿using Ryujinx.Common.Memory;
-using Ryujinx.Graphics.GAL;
+﻿using Ryujinx.Graphics.GAL;
 using Silk.NET.Vulkan;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using VkFormat = Silk.NET.Vulkan.Format;
 
@@ -96,17 +96,20 @@ namespace Ryujinx.Graphics.Vulkan
             _bufferView = null;
         }
 
-        public void SetData(SpanOrArray<byte> data)
+        /// <inheritdoc/>
+        public void SetData(IMemoryOwner<byte> data)
         {
-            _gd.SetBufferData(_bufferHandle, _offset, data);
+            _gd.SetBufferData(_bufferHandle, _offset, data.Memory.Span);
         }
 
-        public void SetData(SpanOrArray<byte> data, int layer, int level)
+        /// <inheritdoc/>
+        public void SetData(IMemoryOwner<byte> data, int layer, int level)
         {
             throw new NotSupportedException();
         }
 
-        public void SetData(SpanOrArray<byte> data, int layer, int level, Rectangle<int> region)
+        /// <inheritdoc/>
+        public void SetData(IMemoryOwner<byte> data, int layer, int level, Rectangle<int> region)
         {
             throw new NotSupportedException();
         }
@@ -129,27 +132,27 @@ namespace Ryujinx.Graphics.Vulkan
             ReleaseImpl();
         }
 
-        public BufferView GetBufferView(CommandBufferScoped cbs)
+        public BufferView GetBufferView(CommandBufferScoped cbs, bool write)
         {
             if (_bufferView == null)
             {
                 _bufferView = _gd.BufferManager.CreateView(_bufferHandle, VkFormat, _offset, _size, ReleaseImpl);
             }
 
-            return _bufferView?.Get(cbs, _offset, _size).Value ?? default;
+            return _bufferView?.Get(cbs, _offset, _size, write).Value ?? default;
         }
 
-        public BufferView GetBufferView(CommandBufferScoped cbs, GAL.Format format)
+        public BufferView GetBufferView(CommandBufferScoped cbs, GAL.Format format, bool write)
         {
             var vkFormat = FormatTable.GetFormat(format);
             if (vkFormat == VkFormat)
             {
-                return GetBufferView(cbs);
+                return GetBufferView(cbs, write);
             }
 
             if (_selfManagedViews != null && _selfManagedViews.TryGetValue(format, out var bufferView))
             {
-                return bufferView.Get(cbs, _offset, _size).Value;
+                return bufferView.Get(cbs, _offset, _size, write).Value;
             }
 
             bufferView = _gd.BufferManager.CreateView(_bufferHandle, vkFormat, _offset, _size, ReleaseImpl);
@@ -159,7 +162,7 @@ namespace Ryujinx.Graphics.Vulkan
                 (_selfManagedViews ??= new Dictionary<GAL.Format, Auto<DisposableBufferView>>()).Add(format, bufferView);
             }
 
-            return bufferView?.Get(cbs, _offset, _size).Value ?? default;
+            return bufferView?.Get(cbs, _offset, _size, write).Value ?? default;
         }
     }
 }

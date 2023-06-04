@@ -1,4 +1,3 @@
-
 <h1 align="center">
   <br>
   <a href="https://ryujinx.org/"><img src="https://i.imgur.com/WcCj6Rt.png" alt="Ryujinx" width="150"></a>
@@ -17,17 +16,9 @@
 
 </p>
 <p align="center">
-    <a href="https://github.com/Ryujinx/Ryujinx/actions/workflows/release.yml">
-        <img src="https://github.com/Ryujinx/Ryujinx/actions/workflows/release.yml/badge.svg"
+    <a href="https://github.com/CarlosGomez-dev/Ryujinx/actions/workflows/build.yml">
+        <img src="https://github.com/CarlosGomez-dev/Ryujinx/actions/workflows/build.yml/badge.svg"
             alt="">
-    </a>
-    <a href="https://crwd.in/ryujinx">
-        <img src="https://badges.crowdin.net/ryujinx/localized.svg"
-            alt="">
-    </a>
-    <a href="https://discord.com/invite/VkQYXAZ">
-        <img src="https://img.shields.io/discord/410208534861447168?color=5865F2&label=Ryujinx&logo=discord&logoColor=white"
-            alt="Discord">
     </a>
     <br>
     <br>
@@ -50,7 +41,7 @@ To run this emulator, your PC must be equipped with at least 8GiB of RAM; failin
 See our [Setup & Configuration Guide](https://github.com/Ryujinx/Ryujinx/wiki/Ryujinx-Setup-&-Configuration-Guide) on how to set up the emulator.
 
 For our Local Wireless and LAN builds, see our [Multiplayer: Local Play/Local Wireless Guide
-](https://github.com/Ryujinx/Ryujinx/wiki/Multiplayer-(LDN-Local-Wireless)-Guide).
+](<https://github.com/Ryujinx/Ryujinx/wiki/Multiplayer-(LDN-Local-Wireless)-Guide>).
 
 Avalonia UI comes with translations for various languages. See [Crowdin](https://crwd.in/ryujinx) for more information.
 
@@ -62,15 +53,16 @@ If you want to see details on updates to the emulator, you can visit our [Change
 
 The latest automatic build for Windows, macOS, and Linux can be found on the [Official Website](https://ryujinx.org/download).
 
-
 ## Building
 
 If you wish to build the emulator yourself, follow these steps:
 
 ### Step 1
+
 Install the X64 version of [.NET 7.0 (or higher) SDK](https://dotnet.microsoft.com/download/dotnet/7.0).
 
 ### Step 2
+
 Either use `git clone https://github.com/Ryujinx/Ryujinx` on the command line to clone the repository or use Code --> Download zip button to get the files.
 
 ### Step 3
@@ -81,12 +73,11 @@ the built files will be found in the newly created build directory.
 
 Ryujinx system files are stored in the `Ryujinx` folder. This folder is located in the user folder, which can be accessed by clicking `Open Ryujinx Folder` under the File menu in the GUI.
 
-
 ## Features
 
- - **Audio**
+- **Audio**
 
-   Audio output is entirely supported, audio input (microphone) isn't supported. We use C# wrappers for [OpenAL](https://openal-soft.org/), and [SDL2](https://www.libsdl.org/) & [libsoundio](http://libsound.io/) as fallbacks.
+  Audio output is entirely supported, audio input (microphone) isn't supported. We use C# wrappers for [OpenAL](https://openal-soft.org/), and [SDL2](https://www.libsdl.org/) & [libsoundio](http://libsound.io/) as fallbacks.
 
 - **CPU**
 
@@ -100,17 +91,16 @@ Ryujinx system files are stored in the `Ryujinx` folder. This folder is located 
 
 - **Input**
 
-   We currently have support for keyboard, mouse, touch input, JoyCon input support, and nearly all controllers. Motion controls are natively supported in most cases; for dual-JoyCon motion support, DS4Windows or BetterJoy are currently required.
-   In all scenarios, you can set up everything inside the input configuration menu.
+  We currently have support for keyboard, mouse, touch input, JoyCon input support, and nearly all controllers. Motion controls are natively supported in most cases; for dual-JoyCon motion support, DS4Windows or BetterJoy are currently required.
+  In all scenarios, you can set up everything inside the input configuration menu.
 
 - **DLC & Modifications**
 
-   Ryujinx is able to manage add-on content/downloadable content through the GUI. Mods (romfs, exefs, and runtime mods such as cheats) are also supported; the GUI contains a shortcut to open the respective mods folder for a particular game.
+  Ryujinx is able to manage add-on content/downloadable content through the GUI. Mods (romfs, exefs, and runtime mods such as cheats) are also supported; the GUI contains a shortcut to open the respective mods folder for a particular game.
 
 - **Configuration**
 
-   The emulator has settings for enabling or disabling some logging, remapping controllers, and more. You can configure all of them through the graphical interface or manually through the config file, `Config.json`, found in the user folder which can be accessed by clicking `Open Ryujinx Folder` under the File menu in the GUI.
-
+  The emulator has settings for enabling or disabling some logging, remapping controllers, and more. You can configure all of them through the graphical interface or manually through the config file, `Config.json`, found in the user folder which can be accessed by clicking `Open Ryujinx Folder` under the File menu in the GUI.
 
 ## Contact
 
@@ -125,10 +115,11 @@ If you'd like to support the project financially, Ryujinx has an active Patreon 
 </a>
 
 All developers working on the project do so in their free time, but the project has several expenses:
-* Hackable Nintendo Switch consoles to reverse-engineer the hardware
-* Additional computer hardware for testing purposes (e.g. GPUs to diagnose graphical bugs, etc.)
-* Licenses for various software development tools (e.g. Jetbrains, IDA)
-* Web hosting and infrastructure maintenance (e.g. LDN servers)
+
+- Hackable Nintendo Switch consoles to reverse-engineer the hardware
+- Additional computer hardware for testing purposes (e.g. GPUs to diagnose graphical bugs, etc.)
+- Licenses for various software development tools (e.g. Jetbrains, IDA)
+- Web hosting and infrastructure maintenance (e.g. LDN servers)
 
 All funds received through Patreon are considered a donation to support the project. Patrons receive early access to progress reports and exclusive access to developer interviews.
 
@@ -137,6 +128,7 @@ All funds received through Patreon are considered a donation to support the proj
 This software is licensed under the terms of the <a href="https://github.com/Ryujinx/Ryujinx/blob/master/LICENSE.txt" target="_blank">MIT license.</a></i><br />
 This project makes use of code authored by the libvpx project, licensed under BSD and the ffmpeg project, licensed under LGPLv3.
 See [LICENSE.txt](LICENSE.txt) and [THIRDPARTY.md](distribution/legal/THIRDPARTY.md) for more details.
+
 ## Credits
 
 - [LibHac](https://github.com/Thealexbarney/LibHac) is used for our file-system.

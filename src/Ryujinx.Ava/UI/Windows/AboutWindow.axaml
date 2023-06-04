@@ -62,14 +62,14 @@
                             VerticalAlignment="Center"
                             FontSize="28"
                             FontWeight="Bold"
-                            Text="Ryujinx"
+                            Text="Ryujinx-C"
                             TextAlignment="Center"
                             Width="100" />
                         <TextBlock
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             FontSize="11"
-                            Text="(REE-YOU-JINX)"
+                            Text="(REE-YOU-JINX-SEE)"
                             TextAlignment="Center"
                             Width="100" />
                     </flex:FlexPanel>
